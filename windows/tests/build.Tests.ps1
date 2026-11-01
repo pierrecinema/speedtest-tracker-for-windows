@@ -25,7 +25,7 @@ Describe 'versions.json' {
 }
 
 Describe 'stage' {
-    It 'contains the runtime tools' -ForEach @('php\php-cgi.exe', 'caddy\caddy.exe', 'winsw\SpeedtestTracker.exe', 'vc_redist.x64.exe', 'cacert.pem') {
+    It 'contains the runtime tools' -ForEach @('php\php-cgi.exe', 'caddy\caddy.exe', 'winsw\SpeedtestTracker.exe', 'winsw\SpeedtestTracker.xml', 'vc_redist.x64.exe', 'cacert.pem', 'versions.json', 'runtime\supervisor.ps1', 'runtime\common.ps1', 'runtime\Caddyfile.tpl', 'installer\provision.ps1') {
         Join-Path $Stage $_ | Should -Exist
     }
 

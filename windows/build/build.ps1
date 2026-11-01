@@ -47,6 +47,12 @@ Expand-Archive (Get-Pinned 'caddy' 'caddy.zip') $caddyDir
 
 $winswDir = New-Item -ItemType Directory -Force (Join-Path $stage 'winsw')
 Copy-Item (Get-Pinned 'winsw' 'WinSW-x64.exe') (Join-Path $winswDir 'SpeedtestTracker.exe')
+Copy-Item (Join-Path $winDir 'runtime\SpeedtestTracker.xml') $winswDir
+
+$runtimeDir = New-Item -ItemType Directory -Force (Join-Path $stage 'runtime')
+Copy-Item (Join-Path $winDir 'runtime\*') $runtimeDir -Include '*.ps1', '*.tpl'
+Copy-Item (Join-Path $winDir 'installer\provision.ps1') (New-Item -ItemType Directory -Force (Join-Path $stage 'installer'))
+Copy-Item (Join-Path $winDir 'versions.json') $stage
 
 Copy-Item (Get-Pinned 'vcredist' 'vc_redist.x64.exe') $stage
 Copy-Item (Get-Pinned 'cacert' 'cacert.pem') $stage

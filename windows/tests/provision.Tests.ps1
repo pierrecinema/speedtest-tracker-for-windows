@@ -141,15 +141,15 @@ Describe 'Install-OoklaCli' {
 
 Describe 'Set-DataLinks' {
     BeforeEach {
-        $script:Root = Join-Path $TestDrive "root $(Get-Random)"
-        $script:Data = Join-Path $TestDrive "data $(Get-Random)"
-        New-Item -ItemType Directory (Join-Path $Root 'app\storage\framework\views') -Force | Out-Null
-        Set-Content (Join-Path $Root 'app\storage\framework\skeleton.txt') 'x'
-        New-Item -ItemType Directory $Data | Out-Null
-        Set-Content (Join-Path $Data '.env') 'A=1'
+        $script:TestRoot = Join-Path $TestDrive "root $(Get-Random)"
+        $script:TestData = Join-Path $TestDrive "data $(Get-Random)"
+        New-Item -ItemType Directory (Join-Path $TestRoot 'app\storage\framework\views') -Force | Out-Null
+        Set-Content (Join-Path $TestRoot 'app\storage\framework\skeleton.txt') 'x'
+        New-Item -ItemType Directory $TestData | Out-Null
+        Set-Content (Join-Path $TestData '.env') 'A=1'
         $script:CanLink = $true
         try {
-            New-Item -ItemType SymbolicLink -Path (Join-Path $TestDrive "probe$(Get-Random)") -Target (Join-Path $Data '.env') -ErrorAction Stop | Out-Null
+            New-Item -ItemType SymbolicLink -Path (Join-Path $TestDrive "probe$(Get-Random)") -Target (Join-Path $TestData '.env') -ErrorAction Stop | Out-Null
         } catch {
             $script:CanLink = $false
         }
@@ -157,21 +157,21 @@ Describe 'Set-DataLinks' {
 
     It 'moves storage to the data folder and links it' {
         if (-not $CanLink) { Set-ItResult -Skipped -Because 'symbolic links need elevation here'; return }
-        Set-DataLinks -Root $Root -DataDir $Data
-        Join-Path $Data 'storage\framework\skeleton.txt' | Should -Exist
-        (Get-Content (Join-Path $Root 'app\.env')) | Should -Be 'A=1'
-        Set-Content (Join-Path $Root 'app\storage\written.txt') 'y'
-        Join-Path $Data 'storage\written.txt' | Should -Exist
+        Set-DataLinks -Root $TestRoot -DataDir $TestData
+        Join-Path $TestData 'storage\framework\skeleton.txt' | Should -Exist
+        (Get-Content (Join-Path $TestRoot 'app\.env')) | Should -Be 'A=1'
+        Set-Content (Join-Path $TestRoot 'app\storage\written.txt') 'y'
+        Join-Path $TestData 'storage\written.txt' | Should -Exist
     }
 
     It 'keeps existing data when an update replaced the app folder' {
         if (-not $CanLink) { Set-ItResult -Skipped -Because 'symbolic links need elevation here'; return }
-        New-Item -ItemType Directory (Join-Path $Data 'storage') | Out-Null
-        Set-Content (Join-Path $Data 'storage\old.txt') 'keep'
-        Set-DataLinks -Root $Root -DataDir $Data
-        Set-DataLinks -Root $Root -DataDir $Data
-        Join-Path $Root 'app\storage\old.txt' | Should -Exist
-        Join-Path $Data 'storage\old.txt' | Should -Exist
+        New-Item -ItemType Directory (Join-Path $TestData 'storage') | Out-Null
+        Set-Content (Join-Path $TestData 'storage\old.txt') 'keep'
+        Set-DataLinks -Root $TestRoot -DataDir $TestData
+        Set-DataLinks -Root $TestRoot -DataDir $TestData
+        Join-Path $TestRoot 'app\storage\old.txt' | Should -Exist
+        Join-Path $TestData 'storage\old.txt' | Should -Exist
     }
 }
 
