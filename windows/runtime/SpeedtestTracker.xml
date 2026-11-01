@@ -1,0 +1,17 @@
+<service>
+  <id>SpeedtestTracker</id>
+  <name>Speedtest Tracker</name>
+  <description>Speedtest Tracker for Windows: misst die Internetverbindung und stellt die Web-Oberfläche bereit.</description>
+  <executable>powershell.exe</executable>
+  <arguments>-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%BASE%\..\runtime\supervisor.ps1" -Root "%BASE%\.." -DataDir "%ProgramData%\SpeedtestTracker"</arguments>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <onfailure action="restart" delay="10 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>30 sec</stoptimeout>
+  <logpath>%ProgramData%\SpeedtestTracker\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>1024</sizeThreshold>
+    <keepFiles>2</keepFiles>
+  </log>
+</service>
