@@ -3,7 +3,7 @@
 function Get-EnvValue {
     param([string]$Path, [string]$Key)
     $line = Get-Content $Path -ErrorAction SilentlyContinue | Where-Object { $_ -match "^$Key=" } | Select-Object -First 1
-    if ($line) { return ($line -replace "^$Key=", '').Trim('"') }
+    if ($line) { return ($line -replace "^$Key=", '').Trim('"', "'") }
     return $null
 }
 

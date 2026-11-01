@@ -35,7 +35,7 @@ function Write-EnvFile {
         'DISPLAY_TIMEZONE=Europe/Zurich'
         "SPEEDTEST_SCHEDULE=`"$Schedule`""
         'DB_CONNECTION=sqlite'
-        "DB_DATABASE=`"$database`""
+        "DB_DATABASE='$database'"
         'QUEUE_CONNECTION=database'
         'CACHE_STORE=database'
         'SESSION_DRIVER=cookie'

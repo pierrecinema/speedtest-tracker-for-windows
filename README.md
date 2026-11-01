@@ -1,4 +1,6 @@
-# 🐇 Speedtest Tracker
+# 🐇 Speedtest Tracker for Windows
+
+Dieser Fork läuft ohne Docker direkt auf Windows 10 und 11. Installation und Aufbau stehen in [windows/README.md](windows/README.md).
 
 Speedtest Tracker is a self-hosted application that monitors the performance and uptime of your internet connection.
 

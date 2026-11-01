@@ -1,0 +1,61 @@
+name: Windows installer
+
+on:
+  push:
+    branches: [windows]
+    tags: ['v*-win.*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build stage
+        shell: pwsh
+        run: ./windows/build/build.ps1
+
+      - name: Unit tests
+        shell: pwsh
+        run: |
+          Install-Module Pester -Force -Scope CurrentUser -SkipPublisherCheck
+          Import-Module Pester
+          $result = Invoke-Pester windows/tests/*.Tests.ps1 -Output Detailed -PassThru
+          if ($result.FailedCount -gt 0 -or $result.FailedContainersCount -gt 0) { exit 1 }
+
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $version = if ($tag -like 'v*-win.*') { $tag.Substring(1) } else { "0.0.0-dev.${{ github.run_number }}" }
+          choco install innosetup --no-progress -y
+          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' "/DAppVersion=$version" '/DStageDir=..\build\out\stage' '/O..\build\out' windows/installer/setup.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Install, update and uninstall for real
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem windows/build/out/SpeedtestTracker-Setup-*.exe).FullName
+          ./windows/tests/installer-e2e.ps1 -Setup $setup
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: windows/build/out/SpeedtestTracker-Setup-*.exe
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $setup = (Get-ChildItem windows/build/out/SpeedtestTracker-Setup-*.exe).FullName
+          gh release create '${{ github.ref_name }}' $setup --title "Speedtest Tracker for Windows ${{ github.ref_name }}" --notes "Installer für Windows 10 und 11. Herunterladen, starten, fertig." --target windows

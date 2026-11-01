@@ -40,6 +40,11 @@ Describe 'Write-EnvFile' {
         Get-EnvValue -Path $EnvPath -Key 'DB_DATABASE' | Should -Be (Join-Path $TestDrive 'database.sqlite')
     }
 
+    It 'single-quotes the Windows path because dotenv rejects backslashes in double quotes' {
+        Write-EnvFile -Path $EnvPath -Port 8765 -Schedule '30 * * * *' -AppUrl 'http://192.0.2.1:8765'
+        (Get-Content $EnvPath) | Should -Contain "DB_DATABASE='$(Join-Path $TestDrive 'database.sqlite')'"
+    }
+
     It 'keeps the key, manual edits and unknown lines on a second run' {
         Write-EnvFile -Path $EnvPath -Port 8765 -Schedule '30 * * * *' -AppUrl 'http://192.0.2.1:8765'
         $key = Get-EnvValue -Path $EnvPath -Key 'APP_KEY'
