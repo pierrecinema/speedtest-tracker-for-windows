@@ -37,7 +37,7 @@ jobs:
           $tag = '${{ github.ref_name }}'
           $version = if ($tag -like 'v*-win.*') { $tag.Substring(1) } else { "0.0.0-dev.${{ github.run_number }}" }
           choco install innosetup --no-progress -y
-          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' "/DAppVersion=$version" '/DStageDir=..\build\out\stage' '/O..\build\out' windows/installer/setup.iss
+          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' "/DAppVersion=$version" "/DStageDir=$PWD\windows\build\out\stage" "/O$PWD\windows\build\out" windows/installer/setup.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Install, update and uninstall for real
