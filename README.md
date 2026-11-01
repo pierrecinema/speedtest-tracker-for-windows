@@ -1,6 +1,6 @@
 # 🐇 Speedtest Tracker for Windows
 
-Dieser Fork läuft ohne Docker direkt auf Windows 10 und 11. Installation und Aufbau stehen in [windows/README.md](windows/README.md).
+Dieser Fork von [alexjustesen/speedtest-tracker](https://github.com/alexjustesen/speedtest-tracker) läuft ohne Docker direkt auf Windows 10 und 11. Menüs, Aussehen und Funktionen sind gleich wie beim Original.
 
 Speedtest Tracker is a self-hosted application that monitors the performance and uptime of your internet connection.
 
@@ -16,12 +16,18 @@ Speedtest Tracker is a self-hosted application that monitors the performance and
 
 ## Getting Started
 
-Speedtest Tracker is containerized so you can run it anywhere you run your containers. The image is built by LinuxServer.io, build information can be found [here](https://fleet.linuxserver.io/image?name=linuxserver/speedtest-tracker).
+1. `SpeedtestTracker-Setup-<version>.exe` aus den [Releases](https://github.com/pierrecinema/speedtest-tracker-for-windows/releases) herunterladen.
+2. Datei starten und dem Assistenten folgen. Der Installer ist nicht signiert, Windows zeigt deshalb eine Warnung. Unter „Weitere Informationen“ lässt er sich trotzdem starten.
+3. `http://localhost:8765` öffnen, mit den Standarddaten des Originals anmelden und das Passwort sofort ändern.
 
-- [Installation](https://docs.speedtest-tracker.dev/getting-started/installation) guide will get you up and running and includes steps for deploying the Docker image or to NAS platforms like Synology and Unraid.
-- [Configurations](https://docs.speedtest-tracker.dev/getting-started/environment-variables) are used to tailor Speedtest Tracker to your needs.
-- [Notifications](https://docs.speedtest-tracker.dev/settings/notifications) channels alert you when issues happen.
-- [Frequently Asked Questions](https://docs.speedtest-tracker.dev/help/faqs) are common questions that can help you resolve issues.
+Alles Nötige kommt mit, Docker oder PHP müssen nicht installiert sein. Der Tracker läuft als Windows-Dienst im Hintergrund, startet mit Windows und ist im lokalen Netz über die IP-Adresse des PCs erreichbar. Ist der PC aus oder im Schlafmodus, wird nicht gemessen.
+
+Weitere Informationen:
+
+- [Windows-Anleitung](windows/README.md): Aufbau, Update, Bauen des Installers
+- [Konfiguration](https://docs.speedtest-tracker.dev/getting-started/environment-variables): Die Einstellungen stehen in `C:\ProgramData\SpeedtestTracker\.env`.
+- [Benachrichtigungen](https://docs.speedtest-tracker.dev/settings/notifications)
+- [Häufige Fragen](https://docs.speedtest-tracker.dev/help/faqs)
 
 ## Translations
 

@@ -155,9 +155,7 @@ function Stop-TrackerService {
 function Start-TrackerService {
     param([string]$Root, [int]$Port)
     $exe = Get-ServiceExe -Root $Root
-    if (Get-Service SpeedtestTracker -ErrorAction SilentlyContinue) {
-        Invoke-Checked $exe @('refresh') | Out-Null
-    } else {
+    if (-not (Get-Service SpeedtestTracker -ErrorAction SilentlyContinue)) {
         Invoke-Checked $exe @('install') | Out-Null
     }
     Start-Service SpeedtestTracker
