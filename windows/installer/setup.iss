@@ -1,4 +1,4 @@
-; Compile with: ISCC /DAppVersion=1.15.1-win.1 /DStageDir=..\build\out\stage /O..\build\out setup.iss
+﻿; Compile with: ISCC /DAppVersion=1.15.1-win.1 /DStageDir=..\build\out\stage /O..\build\out setup.iss
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
