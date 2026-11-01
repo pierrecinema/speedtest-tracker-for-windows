@@ -34,3 +34,6 @@ yarn-error.log
 /AGENTS.md
 /CLAUDE.md
 /opencode.json
+
+/windows/build/out/
+/.superpowers/
