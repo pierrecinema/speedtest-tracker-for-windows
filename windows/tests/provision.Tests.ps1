@@ -89,6 +89,48 @@ Describe 'Update-AppUrl' {
     }
 }
 
+Describe 'Update-AppUrl with a manual address' {
+    It 'keeps a hostname the owner set' {
+        $envPath = Join-Path $TestDrive 'manual.env'
+        Write-EnvFile -Path $envPath -Port 8765 -Schedule '30 * * * *' -AppUrl 'http://192.0.2.1:8765'
+        Set-EnvValue -Path $envPath -Key 'APP_URL' -Value 'http://desktop.lan:8765'
+        Update-AppUrl -EnvPath $envPath -IPv4 '192.168.1.216'
+        Get-EnvValue -Path $envPath -Key 'APP_URL' | Should -Be 'http://desktop.lan:8765'
+    }
+
+    It 'replaces a generated localhost address' {
+        $envPath = Join-Path $TestDrive 'local.env'
+        Write-EnvFile -Path $envPath -Port 8765 -Schedule '30 * * * *' -AppUrl 'http://localhost:8765'
+        Update-AppUrl -EnvPath $envPath -IPv4 '192.168.1.216'
+        Get-EnvValue -Path $envPath -Key 'APP_URL' | Should -Be 'http://192.168.1.216:8765'
+    }
+}
+
+Describe 'Sync-PortConfig' {
+    BeforeEach {
+        $script:SyncRoot = Join-Path $TestDrive "sync root $(Get-Random)"
+        $script:SyncData = Join-Path $TestDrive "sync data $(Get-Random)"
+        New-Item -ItemType Directory (Join-Path $SyncRoot 'runtime'), $SyncData -Force | Out-Null
+        Copy-Item (Join-Path $WinDir 'runtime\Caddyfile.tpl') (Join-Path $SyncRoot 'runtime')
+        $script:SyncEnv = Join-Path $SyncData '.env'
+        Write-EnvFile -Path $SyncEnv -Port 8765 -Schedule '30 * * * *' -AppUrl 'http://192.0.2.1:8765'
+        Write-Caddyfile -TemplatePath (Join-Path $SyncRoot 'runtime\Caddyfile.tpl') -Path (Join-Path $SyncData 'Caddyfile') -Port 8765 -Root $SyncRoot -DataDir $SyncData
+        Mock Set-FirewallRule {}
+    }
+
+    It 'follows a port changed in .env' {
+        Set-EnvValue -Path $SyncEnv -Key 'ST_PORT' -Value '9000'
+        Sync-PortConfig -EnvPath $SyncEnv -Root $SyncRoot -DataDir $SyncData
+        (Get-Content (Join-Path $SyncData 'Caddyfile') -Raw) | Should -Match ':9000 \{'
+        Should -Invoke Set-FirewallRule -Times 1 -ParameterFilter { $Port -eq 9000 }
+    }
+
+    It 'leaves everything alone when the port is unchanged' {
+        Sync-PortConfig -EnvPath $SyncEnv -Root $SyncRoot -DataDir $SyncData
+        Should -Invoke Set-FirewallRule -Times 0
+    }
+}
+
 Describe 'Get-PrimaryIPv4' {
     It 'returns an IPv4 address or nothing' {
         $ip = Get-PrimaryIPv4
@@ -190,6 +232,17 @@ Describe 'Set-DataLinks' {
 }
 
 Describe 'Invoke-Install failure handling' {
+    BeforeEach {
+        Mock Disable-TrackerService {}
+    }
+
+    It 'keeps a half-updated install from starting at the next boot' {
+        Mock Stop-TrackerService {}
+        Mock Install-OoklaCli { throw 'Ookla download failed' }
+        { Invoke-Install -Root 'C:\none' -DataDir (Join-Path $TestDrive 'd3') -Port 8765 -Schedule '30 * * * *' -Versions ([pscustomobject]@{ ookla = @{ url = 'x'; sha256 = 'y'; version = 'z' } }) } | Should -Throw '*Ookla*'
+        Should -Invoke Disable-TrackerService -Times 1
+    }
+
     It 'does not start the service when the port is busy' {
         Mock Stop-TrackerService {}
         Mock Install-OoklaCli {}

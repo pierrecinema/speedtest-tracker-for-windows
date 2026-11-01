@@ -89,6 +89,7 @@ if ($MyInvocation.InvocationName -ne '.') {
     New-Item -ItemType Directory -Force $logDir | Out-Null
 
     Update-AppUrl -EnvPath (Join-Path $DataDir '.env')
+    Sync-PortConfig -EnvPath (Join-Path $DataDir '.env') -Root $Root -DataDir $DataDir
     Set-ChildEnvironment -Root $Root -DataDir $DataDir
 
     $definitions = Get-ProcessDefinitions -Root $Root -DataDir $DataDir

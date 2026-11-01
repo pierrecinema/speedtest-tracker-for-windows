@@ -32,11 +32,29 @@ function Get-PrimaryIPv4 {
 function Update-AppUrl {
     param([string]$EnvPath, [string]$IPv4 = (Get-PrimaryIPv4))
     if (-not $IPv4) { return }
+    $current = Get-EnvValue -Path $EnvPath -Key 'APP_URL'
+    if ($current -notmatch '^http://(\d+\.\d+\.\d+\.\d+|localhost):\d+$') { return }
     $port = Get-EnvValue -Path $EnvPath -Key 'ST_PORT'
     $url = "http://${IPv4}:$port"
-    if ((Get-EnvValue -Path $EnvPath -Key 'APP_URL') -ne $url) {
+    if ($current -ne $url) {
         Set-EnvValue -Path $EnvPath -Key 'APP_URL' -Value $url
     }
+}
+
+function Set-FirewallRule {
+    param([int]$Port)
+    Remove-NetFirewallRule -DisplayName 'Speedtest Tracker' -ErrorAction SilentlyContinue
+    New-NetFirewallRule -DisplayName 'Speedtest Tracker' -Direction Inbound -Protocol TCP -LocalPort $Port `
+        -RemoteAddress LocalSubnet -Action Allow -Profile Any | Out-Null
+}
+
+function Sync-PortConfig {
+    param([string]$EnvPath, [string]$Root, [string]$DataDir)
+    $port = [int](Get-EnvValue -Path $EnvPath -Key 'ST_PORT')
+    $caddyfile = Join-Path $DataDir 'Caddyfile'
+    if ((Get-Content $caddyfile -Raw -ErrorAction SilentlyContinue) -match "(?m)^:$port \{") { return }
+    Write-Caddyfile -TemplatePath (Join-Path $Root 'runtime\Caddyfile.tpl') -Path $caddyfile -Port $port -Root $Root -DataDir $DataDir
+    Set-FirewallRule -Port $port
 }
 
 function Write-Caddyfile {

@@ -52,6 +52,16 @@ try {
     Start-Sleep -Seconds 20
     Assert-True ((Get-Health) -eq 200) 'web interface answers after a restart'
 
+    (Get-Content "$dataDir\.env") -replace '^ST_PORT=.*', 'ST_PORT=8766' | Set-Content "$dataDir\.env"
+    Restart-Service SpeedtestTracker
+    Start-Sleep -Seconds 20
+    $moved = (Invoke-WebRequest 'http://127.0.0.1:8766/api/healthcheck' -UseBasicParsing -TimeoutSec 10).StatusCode
+    Assert-True ($moved -eq 200) 'a port changed in .env takes effect after a restart'
+    Assert-True ((Get-NetFirewallRule -DisplayName $rule | Get-NetFirewallPortFilter).LocalPort -eq '8766') 'the firewall follows the changed port'
+    (Get-Content "$dataDir\.env") -replace '^ST_PORT=.*', 'ST_PORT=8765' | Set-Content "$dataDir\.env"
+    Restart-Service SpeedtestTracker
+    Start-Sleep -Seconds 20
+
     Invoke-Setup $Setup @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART')
     Assert-True ((Get-Health) -eq 200) 'web interface answers after an update'
     Assert-True ((Get-Content "$dataDir\.env" | Where-Object { $_ -match '^APP_KEY=' }) -eq $key) 'update keeps APP_KEY'

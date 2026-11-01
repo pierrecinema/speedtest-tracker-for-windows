@@ -15,7 +15,6 @@ if ($PSVersionTable.PSEdition -ne 'Core') {
     $env:PSModulePath = [Environment]::GetEnvironmentVariable('PSModulePath', 'Machine')
 }
 
-$FirewallRule = 'Speedtest Tracker'
 
 function New-AppKey {
     $bytes = New-Object byte[] 32
@@ -152,12 +151,21 @@ function Stop-TrackerService {
     }
 }
 
+function Disable-TrackerService {
+    param([string]$Root)
+    if (Get-Service SpeedtestTracker -ErrorAction SilentlyContinue) {
+        Stop-TrackerService -Root $Root
+        Set-Service SpeedtestTracker -StartupType Manual
+    }
+}
+
 function Start-TrackerService {
     param([string]$Root, [int]$Port)
     $exe = Get-ServiceExe -Root $Root
     if (-not (Get-Service SpeedtestTracker -ErrorAction SilentlyContinue)) {
         Invoke-Checked $exe @('install') | Out-Null
     }
+    Invoke-Checked 'sc.exe' @('config', 'SpeedtestTracker', 'start=', 'delayed-auto') | Out-Null
     Start-Service SpeedtestTracker
 
     $deadline = (Get-Date).AddSeconds(60)
@@ -170,13 +178,6 @@ function Start-TrackerService {
         Start-Sleep -Seconds 2
     }
     throw "The service started, but the web interface does not answer on port $Port"
-}
-
-function Set-FirewallRule {
-    param([int]$Port)
-    Remove-NetFirewallRule -DisplayName $FirewallRule -ErrorAction SilentlyContinue
-    New-NetFirewallRule -DisplayName $FirewallRule -Direction Inbound -Protocol TCP -LocalPort $Port `
-        -RemoteAddress LocalSubnet -Action Allow -Profile Any | Out-Null
 }
 
 function Protect-DataDir {
@@ -206,26 +207,31 @@ function Invoke-Install {
     $existing = Get-EnvValue -Path $envPath -Key 'ST_PORT'
     if ($existing) { $Port = [int]$existing }
 
-    Stop-TrackerService -Root $Root
-    Install-OoklaCli -Dest (Join-Path $DataDir 'ookla') -Url $Versions.ookla.url -Sha256 $Versions.ookla.sha256 -Version $Versions.ookla.version
-    if (-not (Test-PortFree -Port $Port)) {
-        throw "Port $Port is already in use"
+    try {
+        Stop-TrackerService -Root $Root
+        Install-OoklaCli -Dest (Join-Path $DataDir 'ookla') -Url $Versions.ookla.url -Sha256 $Versions.ookla.sha256 -Version $Versions.ookla.version
+        if (-not (Test-PortFree -Port $Port)) {
+            throw "Port $Port is already in use"
+        }
+
+        New-Item -ItemType Directory -Force (Join-Path $DataDir 'logs') | Out-Null
+        $ip = Get-PrimaryIPv4
+        if (-not $ip) { $ip = 'localhost' }
+        Write-EnvFile -Path $envPath -Port $Port -Schedule $Schedule -AppUrl "http://${ip}:$Port"
+        Set-DataLinks -Root $Root -DataDir $DataDir
+
+        $database = Join-Path $DataDir 'database.sqlite'
+        if (-not (Test-Path $database)) { New-Item -ItemType File $database | Out-Null }
+        Invoke-Migrations -Root $Root
+
+        Write-Caddyfile -TemplatePath (Join-Path $Root 'runtime\Caddyfile.tpl') -Path (Join-Path $DataDir 'Caddyfile') -Port $Port -Root $Root -DataDir $DataDir
+        Set-FirewallRule -Port $Port
+        Protect-DataDir -DataDir $DataDir
+        Start-TrackerService -Root $Root -Port $Port
+    } catch {
+        Disable-TrackerService -Root $Root
+        throw
     }
-
-    New-Item -ItemType Directory -Force (Join-Path $DataDir 'logs') | Out-Null
-    $ip = Get-PrimaryIPv4
-    if (-not $ip) { $ip = 'localhost' }
-    Write-EnvFile -Path $envPath -Port $Port -Schedule $Schedule -AppUrl "http://${ip}:$Port"
-    Set-DataLinks -Root $Root -DataDir $DataDir
-
-    $database = Join-Path $DataDir 'database.sqlite'
-    if (-not (Test-Path $database)) { New-Item -ItemType File $database | Out-Null }
-    Invoke-Migrations -Root $Root
-
-    Write-Caddyfile -TemplatePath (Join-Path $Root 'runtime\Caddyfile.tpl') -Path (Join-Path $DataDir 'Caddyfile') -Port $Port -Root $Root -DataDir $DataDir
-    Set-FirewallRule -Port $Port
-    Protect-DataDir -DataDir $DataDir
-    Start-TrackerService -Root $Root -Port $Port
 }
 
 function Invoke-Uninstall {
@@ -235,7 +241,7 @@ function Invoke-Uninstall {
     if (Get-Service SpeedtestTracker -ErrorAction SilentlyContinue) {
         Invoke-Checked (Get-ServiceExe -Root $Root) @('uninstall') | Out-Null
     }
-    Remove-NetFirewallRule -DisplayName $FirewallRule -ErrorAction SilentlyContinue
+    Remove-NetFirewallRule -DisplayName 'Speedtest Tracker' -ErrorAction SilentlyContinue
     Remove-DataLinks -Root $Root
     if ($RemoveData -and (Test-Path $DataDir)) {
         Remove-Item $DataDir -Recurse -Force
