@@ -96,7 +96,8 @@ windows/
 **Interfaces:**
 - Consumes: `versions.json`, Stage, `Caddyfile.tpl`.
 - Produces: `provision.ps1 -Action Install -Root <path> -DataDir <path> -Port <int> -Schedule <string>` und `-Action Uninstall [-RemoveData]`. Exit-Code 0 bei Erfolg, sonst 1 mit Meldung in `<DataDir>\logs\install.log`.
-- Produces (per Dot-Source testbar): `Write-EnvFile -Path -Port -Schedule -AppUrl`, `New-AppKey`, `Test-PortFree -Port`, `Install-OoklaCli -Dest -Url -Sha256`.
+- Produces (per Dot-Source testbar): `Write-EnvFile -Path -Port -Schedule -AppUrl`, `New-AppKey`, `Test-PortFree -Port`, `Install-OoklaCli -Dest -Url -Sha256`, `Get-PrimaryIPv4 -> string`, `Update-AppUrl -EnvPath -Port`.
+- IP-Erkennung: Niemand gibt die Adresse von Hand ein. `Get-PrimaryIPv4` nimmt die IPv4-Adresse der Netzwerkkarte mit der Standardroute. `supervisor.ps1` ruft beim Start `Update-AppUrl` auf, damit `APP_URL` auch nach einem DHCP-Wechsel stimmt. Caddy lauscht auf allen Adressen. Ohne Netzwerk bleibt der alte Wert stehen.
 
 - [ ] **Step 1: Failing Tests schreiben:**
   - `Write-EnvFile` legt beim ersten Mal alle Vorgaben aus den Global Constraints an, dazu `APP_KEY=base64:...` und `DB_DATABASE=<DataDir>\database.sqlite`.
@@ -144,7 +145,7 @@ windows/
 
 **Files:** keine im Repository. Änderungen nur auf dem openHAB-Server.
 
-Dieser Schritt läuft auf dem PC, auf dem der Tracker dauerhaft bleibt. Vor dem Start klären: Dieser PC hat `192.168.1.6`, das Thing `Desktop_PC_LHM` zeigt auf `192.168.1.212`. Die Items `DesktopPC_Speedtest_*` passen nur, wenn der Tracker auf .212 läuft.
+Der Tracker läuft auf dem Desktop-PC `192.168.1.212`. Die Installation und den echten Durchlauf aus Task 5 macht der Besitzer dort selbst, das Token kommt aus der Web-Oberfläche auf .212.
 
 - [ ] **Step 1: Bestehende Kanäle lesen.** Zustandspfade von `http:url:Speedtest_Tracker` per openHAB-API auslesen und dasselbe Muster verwenden.
 - [ ] **Step 2: API-Token erzeugen.** Nur mit Leserecht, in der Web-Oberfläche. Das Token nicht im Chat oder Repository wiederholen.
@@ -152,3 +153,4 @@ Dieser Schritt läuft auf dem PC, auf dem der Tracker dauerhaft bleibt. Vor dem 
 - [ ] **Step 4: Items verbinden.** Vier bestehende Items verknüpfen, fünf neue anlegen: `DesktopPC_Speedtest_Jitter`, `_Paketverlust`, `_ISP`, `_Server`, `_Zeitpunkt`.
 - [ ] **Step 5: Zeitplan abgleichen.** Mit dem Zeitplan des Trackers auf .201 vergleichen. Überschneiden sie sich, den Wert in der Oberfläche ändern.
 - [ ] **Step 6: Prüfen.** Nach dem nächsten Abruf: Thing `ONLINE`, Items mit Werten. Bei ausgeschaltetem PC: Thing `OFFLINE`, Werte bleiben stehen.
+- [ ] **Step 7: Widget.** Das bestehende Main-UI-Widget der beiden anderen Tracker suchen und für die `DesktopPC_Speedtest_*`-Items gleich aufbauen. Expected: gleiches Aussehen, Werte vom Desktop-PC.
