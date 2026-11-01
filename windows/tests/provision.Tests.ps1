@@ -3,6 +3,15 @@ BeforeAll {
     . (Join-Path $WinDir 'installer\provision.ps1') -Action Load
 }
 
+Describe 'Windows PowerShell started from PowerShell 7' {
+    It 'still finds its built-in commands despite the inherited module path' {
+        $script = Join-Path $WinDir 'installer\provision.ps1'
+        $env:PSModulePath = "C:\Program Files\PowerShell\7\Modules;$env:PSModulePath"
+        $out = & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -Command ". '$script' -Action Load; (Get-FileHash '$script' -Algorithm SHA256).Algorithm" 2>&1
+        ($out -join ' ') | Should -Match 'SHA256'
+    }
+}
+
 Describe 'New-AppKey' {
     It 'creates a Laravel base64 key of 32 bytes' {
         $key = New-AppKey

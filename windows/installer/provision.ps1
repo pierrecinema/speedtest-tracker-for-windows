@@ -10,6 +10,11 @@ param(
 
 . (Join-Path $PSScriptRoot '..\runtime\common.ps1')
 
+# A setup started from PowerShell 7 passes on its module path, which breaks Windows PowerShell.
+if ($PSVersionTable.PSEdition -ne 'Core') {
+    $env:PSModulePath = [Environment]::GetEnvironmentVariable('PSModulePath', 'Machine')
+}
+
 $FirewallRule = 'Speedtest Tracker'
 
 function New-AppKey {
